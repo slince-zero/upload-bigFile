@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <input id="file" type="file" />
+    <script>
+      const file = document.getElementById('file')
+      const chunksFile = (file, size = 1024 * 1024 * 4) => {
+        let chunks = []
+        for (let i = 0; i < file.size; i += size) {
+          chunks.push(file.slice(i, i + size))
+        }
+        return chunks
+      }
+      // 上传到后台
+      const uploadChunks = (files) => {
+        // 批量上传
+        const list = []
+        for (let i = 0; i < files.length; i++) {
+          const formData = new FormData()
+          formData.append('index', i)
+          formData.append('filename', 'clash')
+          formData.append('file', files[i])
+          list.push(
+            fetch('http://localhost:3002/upload', {
+              method: 'POST',
+              body: formData,
+            })
+          )
+        }
+        Promise.all(list).then((res) => {
+          // 合并文件
+          fetch('http://localhost:3002/merge', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              filename: 'clash',
+            }),
+          })
+        })
+      }
+      file.addEventListener('change', (e) => {
+        let file = e.target.files[0]
+        let chunks = chunksFile(file)
+        uploadChunks(chunks)
+      })
+    </script>
+  </body>
+</html>
